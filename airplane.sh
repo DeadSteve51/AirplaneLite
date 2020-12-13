@@ -46,7 +46,7 @@ case "$1" in
         basedir
         mvn -N install
         cd ${FORK_NAME}-API && mvn -e clean install
-        cd ../Tuinity/Paper/Paper-MojangAPI && mvn -e clean install
+        cd ../Purpur/Paper/Paper-MojangAPI && mvn -e clean install
         cd ../../../${FORK_NAME}-Server && mvn -e clean install
     )
     ;;
@@ -61,7 +61,7 @@ case "$1" in
         cd "$basedir"
         mvn -N install
         cd ${FORK_NAME}-API && mvn -e clean install
-        cd ../Tuinity/Paper/Paper-MojangAPI && mvn -e clean install
+        cd ../Purpur/Paper/Paper-MojangAPI && mvn -e clean install
         cd ../../../${FORK_NAME}-Server && mvn -e clean install
         cd "$basedir"
         ./scripts/paperclip.sh
