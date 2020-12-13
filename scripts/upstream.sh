@@ -23,6 +23,7 @@ fi
 purpurVer=$(gethead Purpur)
 cd "$basedir/Purpur/"
 
+./purpur upstream
 ./purpur patch
 
 cd "$basedir/Purpur/Paper/Paper-Server"
