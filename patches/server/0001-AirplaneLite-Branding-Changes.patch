@@ -92,7 +92,7 @@ index d39b04e2a3d87be04625d85f42f3ab8263e91747..2cc6bcd021ef51152bfad8a5f00d65d7
  
      public CrashReport b(CrashReport crashreport) {
 diff --git a/src/main/java/org/bukkit/craftbukkit/CraftServer.java b/src/main/java/org/bukkit/craftbukkit/CraftServer.java
-index b3bc2d908a028fe182f4be2ed4d2bb6a1e9ec5cb..6deedd9040be8715509beb8a965c8e7e16741686 100644
+index b3bc2d908a028fe182f4be2ed4d2bb6a1e9ec5cb..ed931d709979efc20c70b88aa63a11914cea314b 100644
 --- a/src/main/java/org/bukkit/craftbukkit/CraftServer.java
 +++ b/src/main/java/org/bukkit/craftbukkit/CraftServer.java
 @@ -232,7 +232,7 @@ import javax.annotation.Nullable; // Paper
@@ -100,7 +100,7 @@ index b3bc2d908a028fe182f4be2ed4d2bb6a1e9ec5cb..6deedd9040be8715509beb8a965c8e7e
  
  public final class CraftServer implements Server {
 -    private final String serverName = "Purpur"; // Paper // Tuinity // Purpur
-+    private final String serverName = "AirplaneLite"; // Paper // Tuinity // AirplaneL
++    private final String serverName = "AirplaneLite/Purpur"; // Paper // Tuinity // AirplaneL
      private final String serverVersion;
      private final String bukkitVersion = Versioning.getBukkitVersion();
      private final Logger logger = Logger.getLogger("Minecraft");
