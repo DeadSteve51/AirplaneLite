@@ -12,33 +12,33 @@ git submodule update --init --recursive
 
 if [[ "$1" == up* ]]; then
     (
-        cd "$basedir/Tuinity/"
-        git fetch && git reset --hard origin/dev/lighting
-        ./tuinity upstream
+        cd "$basedir/Purpur/"
+        git fetch && git reset --hard origin/ver/1.16.4
+        ./purpur upstream
         cd ../
-        git add Tuinity
+        git add Purpur
     )
 fi
 
-tuinityVer=$(gethead Tuinity)
-cd "$basedir/Tuinity/"
+purpurVer=$(gethead Purpur)
+cd "$basedir/Purpur/"
 
-./tuinity patch
+./purpur patch
 
-cd "$basedir/Tuinity/Paper/Paper-Server"
+cd "$basedir/Purpur/Paper/Paper-Server"
 mcVer=$(mvn -o org.apache.maven.plugins:maven-help-plugin:2.1.1:evaluate -Dexpression=minecraft_version | sed -n -e '/^\[.*\]/ !{ /^[0-9]/ { p; q } }')
 
 basedir
 . "$basedir"/scripts/importmcdev.sh
 
-minecraftversion=$(cat "$basedir"/Tuinity/Paper/work/BuildData/info.json | grep minecraftVersion | cut -d '"' -f 4)
-version=$(echo -e "Tuinity: $tuinityVer\nmc-dev:$importedmcdev")
+minecraftversion=$(cat "$basedir"/Paper/work/BuildData/info.json | grep minecraftVersion | cut -d '"' -f 4)
+version=$(echo -e "Purpur: $purpurVer\nmc-dev:$importedmcdev")
 tag="${minecraftversion}-${mcVer}-$(echo -e $version | shasum | awk '{print $1}')"
-echo "$tag" > "$basedir"/current-tuinity
+echo "$tag" > "$basedir"/current-purpur
 
 "$basedir"/scripts/generatesources.sh
 
-cd Tuinity
+cd Purpur
 
 function tag {
 (
@@ -53,13 +53,13 @@ echo "Tagging as $tag"
 echo -e "$version"
 
 forcetag=0
-if [ "$(cat "$basedir"/current-tuinity)" != "$tag" ]; then
+if [ "$(cat "$basedir"/current-purpur)" != "$tag" ]; then
     forcetag=1
 fi
 
-tag Tuinity-API $forcetag
-tag Tuinity-Server $forcetag
+tag Purpur-API $forcetag
+tag Purpur-Server $forcetag
 
-pushRepo Tuinity-API $PAPER_API_REPO $tag
-pushRepo Tuinity-Server $PAPER_SERVER_REPO $tag
+pushRepo Purpur-API $PAPER_API_REPO $tag
+pushRepo Purpur-Server $PAPER_SERVER_REPO $tag
 

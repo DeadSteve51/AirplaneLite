@@ -25,7 +25,7 @@ done
 . $(dirname $SOURCE)/init.sh
 PS1="$"
 
-tuinityVer=$(cat current-tuinity)
+purpurVer=$(cat current-purpur)
 gpgsign="$(git config commit.gpgsign || echo "false")"
 echo "Rebuilding Forked projects.... "
 function applyPatch {
@@ -84,8 +84,8 @@ function enableCommitSigningIfNeeded {
     echo "Importing MC-DEV"
     ./scripts/importmcdev.sh "$basedir" || exit 1
 (
-    (applyPatch Tuinity/Tuinity-API ${FORK_NAME}-API HEAD api $API_REPO &&
-    applyPatch Tuinity/Tuinity-Server ${FORK_NAME}-Server HEAD server $SERVER_REPO) || exit 1
+    (applyPatch Purpur/Purpur-API ${FORK_NAME}-API HEAD api $API_REPO &&
+    applyPatch Purpur/Purpur-Server ${FORK_NAME}-Server HEAD server $SERVER_REPO) || exit 1
     enableCommitSigningIfNeeded
 ) || (
     echo "Failed to apply patches"

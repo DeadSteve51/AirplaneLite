@@ -5,28 +5,28 @@ Subject: [PATCH] Branding Changes
 
 
 diff --git a/pom.xml b/pom.xml
-index 4516ba097e8afc3e422efc368311fa66e967c05a..3a8bc866c5bd970883aaf98f63f4c12177d7810f 100644
+index f0696d8c1dede705f6dd3fd0162864dfd42d2fdf..9c6fbb1cbe9c02bb1022796e2e87e6f1d803507f 100644
 --- a/pom.xml
 +++ b/pom.xml
-@@ -3,18 +3,18 @@
+@@ -2,18 +2,18 @@
           xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
      <modelVersion>4.0.0</modelVersion>
      <parent>
--        <groupId>com.tuinity</groupId>
--        <artifactId>tuinity-parent</artifactId>
+-        <groupId>net.pl3x.purpur</groupId>
+-        <artifactId>purpur-parent</artifactId>
 +        <groupId>gg.airplane</groupId>
 +        <artifactId>airplanelite-parent</artifactId>
          <version>dev-SNAPSHOT</version>
          <relativePath>../pom.xml</relativePath>
      </parent>
  
--    <artifactId>tuinity-api</artifactId>
+-    <artifactId>purpur-api</artifactId>
 +    <artifactId>airplanelite-api</artifactId>
      <version>1.16.4-R0.1-SNAPSHOT</version>
      <packaging>jar</packaging>
  
--    <name>Tuinity-API</name>
--    <url>https://github.com/Spottedleaf/Tuinity</url>
+-    <name>Purpur-API</name>
+-    <url>https://github.com/pl3xgaming/Purpur</url>
 +    <name>AirplaneLite-API</name>
 +    <url>https://github.com/Technove/AirplaneLite</url>
      <description>An enhanced plugin API for Minecraft servers.</description>

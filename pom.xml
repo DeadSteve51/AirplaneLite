@@ -27,6 +27,6 @@
     <modules>
         <module>AirplaneLite-API</module>
         <module>AirplaneLite-Server</module>
-        <module>Tuinity${file.separator}Paper${file.separator}Paper-MojangAPI</module> <!-- We don't plan on patching this, so this hack is good enough. -->
+        <module>Purpur${file.separator}Paper${file.separator}Paper-MojangAPI</module> <!-- We don't plan on patching this, so this hack is good enough. -->
     </modules>
 </project>
