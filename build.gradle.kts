@@ -16,7 +16,7 @@ toothpick {
     nmsRevision = "R0.1-SNAPSHOT"
 
     upstream = "Purpur"
-    upstreamBranch = "origin/master"
+    upstreamBranch = "origin/ver/1.16.4"
 
     paperclipName = "launcher-airplanelite.jar"
 
