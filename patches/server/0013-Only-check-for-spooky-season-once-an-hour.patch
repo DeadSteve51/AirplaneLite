@@ -5,10 +5,10 @@ Subject: [PATCH] Only check for spooky season once an hour
 
 
 diff --git a/src/main/java/net/minecraft/server/EntityBat.java b/src/main/java/net/minecraft/server/EntityBat.java
-index 0a59e02d762a096cb3de62e0f8105cc5a5fab8d4..e3768a834d3591ade5685c8ea638b053861ecca6 100644
+index 65313c2678b1ca480951c5ce4c9799e5e7b6d4eb..a5b3574cc68cae8f225b14f09735398c0ae55a9e 100644
 --- a/src/main/java/net/minecraft/server/EntityBat.java
 +++ b/src/main/java/net/minecraft/server/EntityBat.java
-@@ -221,13 +221,22 @@ public class EntityBat extends EntityAmbient {
+@@ -275,13 +275,22 @@ public class EntityBat extends EntityAmbient {
          }
      }
  
