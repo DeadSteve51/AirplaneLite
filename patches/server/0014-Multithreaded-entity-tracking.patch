@@ -92,10 +92,10 @@ index f322dccd834ff56b99f8796309709b5b6ac01456..4c845a8d57d9a602e41b2808e867adec
  
              if (!cancelled) {
 diff --git a/src/main/java/net/minecraft/server/PlayerChunkMap.java b/src/main/java/net/minecraft/server/PlayerChunkMap.java
-index 13948d6225efc4bbac87788d970d00e6a62586a1..9474e9fc1b7ee6b35ad13679f783dfc98d273056 100644
+index 16779ffa00caf32752170700e1d88092802fa932..558645b149090942d4049bac021160adb154adcc 100644
 --- a/src/main/java/net/minecraft/server/PlayerChunkMap.java
 +++ b/src/main/java/net/minecraft/server/PlayerChunkMap.java
-@@ -2148,6 +2148,9 @@ public class PlayerChunkMap extends IChunkLoader implements PlayerChunk.d {
+@@ -2118,6 +2118,9 @@ public class PlayerChunkMap extends IChunkLoader implements PlayerChunk.d {
          entity.tracker = null; // Paper - We're no longer tracked
      }
  
@@ -105,7 +105,7 @@ index 13948d6225efc4bbac87788d970d00e6a62586a1..9474e9fc1b7ee6b35ad13679f783dfc9
      // Paper start - optimised tracker
      private final void processTrackQueue() {
          this.world.timings.tracker1.startTiming();
-@@ -2156,19 +2159,21 @@ public class PlayerChunkMap extends IChunkLoader implements PlayerChunk.d {
+@@ -2126,19 +2129,21 @@ public class PlayerChunkMap extends IChunkLoader implements PlayerChunk.d {
              try {
              while (iterator.hasNext()) {
                  Chunk chunk = iterator.next();
@@ -136,7 +136,7 @@ index 13948d6225efc4bbac87788d970d00e6a62586a1..9474e9fc1b7ee6b35ad13679f783dfc9
          } finally {
              this.world.timings.tracker1.stopTiming();
          }
-@@ -2413,7 +2418,7 @@ Sections go from 0..16. Now whenever a section is not empty, it can potentially
+@@ -2383,7 +2388,7 @@ Sections go from 0..16. Now whenever a section is not empty, it can potentially
      public class EntityTracker {
  
          final EntityTrackerEntry trackerEntry; // Paper - private -> package private
@@ -145,7 +145,7 @@ index 13948d6225efc4bbac87788d970d00e6a62586a1..9474e9fc1b7ee6b35ad13679f783dfc9
          private final int trackingDistance;
          private SectionPosition e;
          // Paper start
-@@ -2512,7 +2517,7 @@ Sections go from 0..16. Now whenever a section is not empty, it can potentially
+@@ -2482,7 +2487,7 @@ Sections go from 0..16. Now whenever a section is not empty, it can potentially
          }
  
          public void updatePlayer(EntityPlayer entityplayer) {
@@ -154,7 +154,7 @@ index 13948d6225efc4bbac87788d970d00e6a62586a1..9474e9fc1b7ee6b35ad13679f783dfc9
              if (entityplayer != this.tracker) {
                  // Paper start - remove allocation of Vec3D here
                  //Vec3D vec3d = entityplayer.getPositionVector().d(this.tracker.getPositionVector()); // MC-155077, SPIGOT-5113
-@@ -2543,7 +2548,11 @@ Sections go from 0..16. Now whenever a section is not empty, it can potentially
+@@ -2513,7 +2518,11 @@ Sections go from 0..16. Now whenever a section is not empty, it can potentially
                          }
                      }
  
