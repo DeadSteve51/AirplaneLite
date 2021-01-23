@@ -1,0 +1,167 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Paul Sauve <paul@technove.co>
+Date: Sat, 23 Jan 2021 15:59:36 -0600
+Subject: [PATCH] Multithreaded entity tracking
+
+
+diff --git a/src/main/java/net/minecraft/server/Chunk.java b/src/main/java/net/minecraft/server/Chunk.java
+index 8b7fd21e6b366196fbc9cd44a340335c4cf9205f..ae61d53ba35ca224c9b0f5ea9b3875434b27cf4b 100644
+--- a/src/main/java/net/minecraft/server/Chunk.java
++++ b/src/main/java/net/minecraft/server/Chunk.java
+@@ -64,6 +64,21 @@ public class Chunk implements IChunkAccess {
+     }
+     // AirplaneL end
+ 
++    // Airplane start - entity tracker runnable
++    // prevents needing to allocate new lambda in processTrackQueue
++    public final Runnable entityTracker = () -> {
++        Entity[] entities = this.entities.getRawData();
++        for (int i = 0, len = this.entities.size(); i < len; ++i) {
++            Entity entity = entities[i];
++            PlayerChunkMap.EntityTracker tracker = ((WorldServer) this.getWorld()).getChunkProvider().playerChunkMap.trackedEntities.get(entity.getId());
++            if (tracker != null) {
++                tracker.updatePlayers(tracker.tracker.getPlayersInTrackRange());
++                tracker.trackerEntry.tick();
++            }
++        }
++    };
++    // Airplane end
++
+     public Chunk(World world, ChunkCoordIntPair chunkcoordintpair, BiomeStorage biomestorage) {
+         this(world, chunkcoordintpair, biomestorage, ChunkConverter.a, TickListEmpty.b(), TickListEmpty.b(), 0L, (ChunkSection[]) null, (Consumer) null);
+     }
+diff --git a/src/main/java/net/minecraft/server/EntityTrackerEntry.java b/src/main/java/net/minecraft/server/EntityTrackerEntry.java
+index f322dccd834ff56b99f8796309709b5b6ac01456..4c845a8d57d9a602e41b2808e867adec14f8ae4c 100644
+--- a/src/main/java/net/minecraft/server/EntityTrackerEntry.java
++++ b/src/main/java/net/minecraft/server/EntityTrackerEntry.java
+@@ -74,7 +74,7 @@ public class EntityTrackerEntry {
+ 
+     public final void tick() { this.a(); } // Paper - OBFHELPER
+     public void a() {
+-        com.tuinity.tuinity.util.TickThread.softEnsureTickThread("Tracker update"); // Tuinity
++        //com.tuinity.tuinity.util.TickThread.softEnsureTickThread("Tracker update"); // Tuinity // Airplane - allow multithreaded
+         List<Entity> list = this.tracker.getPassengers();
+ 
+         if (!list.equals(this.p)) {
+@@ -88,6 +88,8 @@ public class EntityTrackerEntry {
+             ItemStack itemstack = entityitemframe.getItem();
+ 
+             if (this.tickCounter % 10 == 0 && itemstack.getItem() instanceof ItemWorldMap) { // CraftBukkit - Moved this.tickCounter % 10 logic here so item frames do not enter the other blocks
++                // Airplane start - process maps on main
++                MCUtil.ensureMain(() -> {
+                 WorldMap worldmap = ItemWorldMap.getSavedMap(itemstack, this.b);
+                 Iterator iterator = this.trackedPlayers.iterator(); // CraftBukkit
+ 
+@@ -101,6 +103,8 @@ public class EntityTrackerEntry {
+                         entityplayer.playerConnection.sendPacket(packet);
+                     }
+                 }
++                });
++                // Airplane end
+             }
+ 
+             this.c();
+@@ -235,18 +239,25 @@ public class EntityTrackerEntry {
+             // CraftBukkit start - Create PlayerVelocity event
+             boolean cancelled = false;
+ 
+-            if (this.tracker instanceof EntityPlayer) {
++            if (this.tracker instanceof EntityPlayer && PlayerVelocityEvent.getHandlerList().getRegisteredListeners().length > 0) { // Airplane - ensure there's listeners
++                // Airplane start - run on main thread
++                MCUtil.ensureMain(() -> {
+                 Player player = (Player) this.tracker.getBukkitEntity();
+                 org.bukkit.util.Vector velocity = player.getVelocity();
+ 
+                 PlayerVelocityEvent event = new PlayerVelocityEvent(player, velocity.clone());
+                 this.tracker.world.getServer().getPluginManager().callEvent(event);
+ 
+-                if (event.isCancelled()) {
+-                    cancelled = true;
+-                } else if (!velocity.equals(event.getVelocity())) {
++                if (!event.isCancelled() && !velocity.equals(event.getVelocity())) {
+                     player.setVelocity(event.getVelocity());
+                 }
++                if (!event.isCancelled()) {
++                    this.broadcastIncludingSelf(new PacketPlayOutEntityVelocity(this.tracker)); // duplicate from !cancelled below
++                }
++
++                });
++                cancelled = true; // don't broadcast until the event has finished
++                // Airplane end
+             }
+ 
+             if (!cancelled) {
+diff --git a/src/main/java/net/minecraft/server/PlayerChunkMap.java b/src/main/java/net/minecraft/server/PlayerChunkMap.java
+index 13948d6225efc4bbac87788d970d00e6a62586a1..55ccadc3586e08265f380afd3482e02c0168ccc9 100644
+--- a/src/main/java/net/minecraft/server/PlayerChunkMap.java
++++ b/src/main/java/net/minecraft/server/PlayerChunkMap.java
+@@ -2148,6 +2148,9 @@ public class PlayerChunkMap extends IChunkLoader implements PlayerChunk.d {
+         entity.tracker = null; // Paper - We're no longer tracked
+     }
+ 
++    private static final org.bukkit.craftbukkit.util.UnsafeList<Runnable> trackQueue = new org.bukkit.craftbukkit.util.UnsafeList<>();
++    private static int trackQueueUses = 0;
++
+     // Paper start - optimised tracker
+     private final void processTrackQueue() {
+         this.world.timings.tracker1.startTiming();
+@@ -2156,19 +2159,20 @@ public class PlayerChunkMap extends IChunkLoader implements PlayerChunk.d {
+             try {
+             while (iterator.hasNext()) {
+                 Chunk chunk = iterator.next();
+-                Entity[] entities = chunk.entities.getRawData();
+-                for (int i = 0, len = chunk.entities.size(); i < len; ++i) {
+-                    Entity entity = entities[i];
+-                    EntityTracker tracker = this.trackedEntities.get(entity.getId());
+-                    if (tracker != null) {
+-                        tracker.updatePlayers(tracker.tracker.getPlayersInTrackRange());
+-                        tracker.trackerEntry.tick();
+-                    }
+-                }
++                // Airplane start - collect into the unsafelist for parallelStream
++                // todo implement plain forkjoinpool or something
++                trackQueue.add(chunk.entityTracker); // move into chunk.entityTracker
+             }
+             } finally {
+                 iterator.finishedIterating();
+             }
++            trackQueue.parallelStream().forEach(Runnable::run);
++            if (++trackQueueUses > 1000) { // 16 seconds with 3 worlds
++                trackQueue.completeReset(); // completely wipe, allows chunks at tail ends to GC
++            } else {
++                trackQueue.setSize(0); // partially wipe, can contain references to chunks even after it's done
++            }
++            // Airplane end
+         } finally {
+             this.world.timings.tracker1.stopTiming();
+         }
+@@ -2413,7 +2417,7 @@ Sections go from 0..16. Now whenever a section is not empty, it can potentially
+     public class EntityTracker {
+ 
+         final EntityTrackerEntry trackerEntry; // Paper - private -> package private
+-        private final Entity tracker;
++        protected final Entity tracker; // Airplane - public for chunk
+         private final int trackingDistance;
+         private SectionPosition e;
+         // Paper start
+@@ -2512,7 +2516,7 @@ Sections go from 0..16. Now whenever a section is not empty, it can potentially
+         }
+ 
+         public void updatePlayer(EntityPlayer entityplayer) {
+-            org.spigotmc.AsyncCatcher.catchOp("player tracker update"); // Spigot
++            //org.spigotmc.AsyncCatcher.catchOp("player tracker update"); // Spigot // Airplane - allow sync for tracker
+             if (entityplayer != this.tracker) {
+                 // Paper start - remove allocation of Vec3D here
+                 //Vec3D vec3d = entityplayer.getPositionVector().d(this.tracker.getPositionVector()); // MC-155077, SPIGOT-5113
+@@ -2543,7 +2547,11 @@ Sections go from 0..16. Now whenever a section is not empty, it can potentially
+                         }
+                     }
+ 
++                    // Airplane start - sync
++                    synchronized (entityplayer.removeQueue) {
+                     entityplayer.removeQueue.remove(Integer.valueOf(this.tracker.getId()));
++                    }
++                    // Airplane end
+                     // CraftBukkit end
+ 
+                     if (flag1 && this.trackedPlayerMap.putIfAbsent(entityplayer, true) == null) { // Paper
