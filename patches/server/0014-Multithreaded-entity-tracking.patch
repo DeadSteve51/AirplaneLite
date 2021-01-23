@@ -4,6 +4,23 @@ Date: Sat, 23 Jan 2021 15:59:36 -0600
 Subject: [PATCH] Multithreaded entity tracking
 
 
+diff --git a/src/main/java/gg/airplane/AirplaneConfig.java b/src/main/java/gg/airplane/AirplaneConfig.java
+index 4feb9686f45ce4ae9f474447496b8e0f6fcb7e31..3df85f3f8d1f58c10d0f7cf18023dba88467beba 100644
+--- a/src/main/java/gg/airplane/AirplaneConfig.java
++++ b/src/main/java/gg/airplane/AirplaneConfig.java
+@@ -43,4 +43,12 @@ public class AirplaneConfig {
+         }
+     }
+ 
++    public static boolean multithreadedEntityTracker = true;
++
++    private static void entityTracker() {
++        manual.setComment("entity-tracker", "Options to improve the performance of tracked entities");
++
++        multithreadedEntityTracker = manual.get("entity-tracker.multithreaded", multithreadedEntityTracker);
++    }
++
+ }
 diff --git a/src/main/java/net/minecraft/server/Chunk.java b/src/main/java/net/minecraft/server/Chunk.java
 index 8b7fd21e6b366196fbc9cd44a340335c4cf9205f..ae61d53ba35ca224c9b0f5ea9b3875434b27cf4b 100644
 --- a/src/main/java/net/minecraft/server/Chunk.java
@@ -105,10 +122,18 @@ index f322dccd834ff56b99f8796309709b5b6ac01456..4c845a8d57d9a602e41b2808e867adec
  
              if (!cancelled) {
 diff --git a/src/main/java/net/minecraft/server/PlayerChunkMap.java b/src/main/java/net/minecraft/server/PlayerChunkMap.java
-index 16779ffa00caf32752170700e1d88092802fa932..d1a78ec02bc755ee9bd0ac5ae1b57a405b386af5 100644
+index 16779ffa00caf32752170700e1d88092802fa932..79640f65ae05e696df9d44dd641728dea1bf62ac 100644
 --- a/src/main/java/net/minecraft/server/PlayerChunkMap.java
 +++ b/src/main/java/net/minecraft/server/PlayerChunkMap.java
-@@ -2118,6 +2118,9 @@ public class PlayerChunkMap extends IChunkLoader implements PlayerChunk.d {
+@@ -10,6 +10,7 @@ import com.google.common.collect.Queues;
+ import com.google.common.collect.Sets;
+ import com.mojang.datafixers.DataFixer;
+ import com.mojang.datafixers.util.Either;
++import gg.airplane.AirplaneConfig;
+ import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
+ import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
+ import it.unimi.dsi.fastutil.longs.Long2ByteMap;
+@@ -2118,11 +2119,34 @@ public class PlayerChunkMap extends IChunkLoader implements PlayerChunk.d {
          entity.tracker = null; // Paper - We're no longer tracked
      }
  
@@ -118,38 +143,40 @@ index 16779ffa00caf32752170700e1d88092802fa932..d1a78ec02bc755ee9bd0ac5ae1b57a40
      // Paper start - optimised tracker
      private final void processTrackQueue() {
          this.world.timings.tracker1.startTiming();
-@@ -2126,19 +2129,21 @@ public class PlayerChunkMap extends IChunkLoader implements PlayerChunk.d {
+         try {
+             com.tuinity.tuinity.util.maplist.IteratorSafeOrderedReferenceSet.Iterator<Chunk> iterator = this.world.getChunkProvider().entityTickingChunks.iterator();
++            // Airplane start - multithreaded tracker
++            if (AirplaneConfig.multithreadedEntityTracker) {
++                try {
++                    while (iterator.hasNext()) {
++                        Chunk chunk = iterator.next();
++                        // todo implement plain forkjoinpool or something
++                        trackQueue.add(chunk.entityTracker); // move into chunk.entityTracker
++                    }
++                } finally {
++                    iterator.finishedIterating();
++                }
++                trackQueue.parallelStream().forEach(Runnable::run);
++                if (++trackQueueUses > 1000) { // 16 seconds with 3 worlds
++                    trackQueueUses = 0;
++                    trackQueue.completeReset(); // completely wipe, allows chunks at tail ends to GC
++                } else {
++                    trackQueue.setSize(0); // partially wipe, can contain references to chunks even after it's done
++                }
++                return;
++            }
              try {
              while (iterator.hasNext()) {
                  Chunk chunk = iterator.next();
--                Entity[] entities = chunk.entities.getRawData();
--                for (int i = 0, len = chunk.entities.size(); i < len; ++i) {
--                    Entity entity = entities[i];
--                    EntityTracker tracker = this.trackedEntities.get(entity.getId());
--                    if (tracker != null) {
--                        tracker.updatePlayers(tracker.tracker.getPlayersInTrackRange());
--                        tracker.trackerEntry.tick();
--                    }
--                }
-+                // Airplane start - collect into the unsafelist for parallelStream
-+                // todo implement plain forkjoinpool or something
-+                trackQueue.add(chunk.entityTracker); // move into chunk.entityTracker
-             }
+@@ -2139,6 +2163,7 @@ public class PlayerChunkMap extends IChunkLoader implements PlayerChunk.d {
              } finally {
                  iterator.finishedIterating();
              }
-+            trackQueue.parallelStream().forEach(Runnable::run);
-+            if (++trackQueueUses > 1000) { // 16 seconds with 3 worlds
-+                trackQueueUses = 0;
-+                trackQueue.completeReset(); // completely wipe, allows chunks at tail ends to GC
-+            } else {
-+                trackQueue.setSize(0); // partially wipe, can contain references to chunks even after it's done
-+            }
 +            // Airplane end
          } finally {
              this.world.timings.tracker1.stopTiming();
          }
-@@ -2383,7 +2388,7 @@ Sections go from 0..16. Now whenever a section is not empty, it can potentially
+@@ -2383,7 +2408,7 @@ Sections go from 0..16. Now whenever a section is not empty, it can potentially
      public class EntityTracker {
  
          final EntityTrackerEntry trackerEntry; // Paper - private -> package private
@@ -158,7 +185,7 @@ index 16779ffa00caf32752170700e1d88092802fa932..d1a78ec02bc755ee9bd0ac5ae1b57a40
          private final int trackingDistance;
          private SectionPosition e;
          // Paper start
-@@ -2482,7 +2487,7 @@ Sections go from 0..16. Now whenever a section is not empty, it can potentially
+@@ -2482,7 +2507,7 @@ Sections go from 0..16. Now whenever a section is not empty, it can potentially
          }
  
          public void updatePlayer(EntityPlayer entityplayer) {
