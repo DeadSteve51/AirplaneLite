@@ -30,6 +30,19 @@ index 8b7fd21e6b366196fbc9cd44a340335c4cf9205f..ae61d53ba35ca224c9b0f5ea9b387543
      public Chunk(World world, ChunkCoordIntPair chunkcoordintpair, BiomeStorage biomestorage) {
          this(world, chunkcoordintpair, biomestorage, ChunkConverter.a, TickListEmpty.b(), TickListEmpty.b(), 0L, (ChunkSection[]) null, (Consumer) null);
      }
+diff --git a/src/main/java/net/minecraft/server/EntityPlayer.java b/src/main/java/net/minecraft/server/EntityPlayer.java
+index 9f5b7243ccbe0729a061345c25033d9145b91b3f..8cd68444a7657d0bb6b2e1c9429c2e8bb6dfd010 100644
+--- a/src/main/java/net/minecraft/server/EntityPlayer.java
++++ b/src/main/java/net/minecraft/server/EntityPlayer.java
+@@ -50,7 +50,7 @@ public class EntityPlayer extends EntityHuman implements ICrafting {
+     public NetworkManager networkManager; // Paper
+     public final MinecraftServer server;
+     public final PlayerInteractManager playerInteractManager;
+-    public final Deque<Integer> removeQueue = new ArrayDeque<>(); // Paper
++    public final Deque<Integer> removeQueue = new java.util.concurrent.ConcurrentLinkedDeque<>(); // Paper // Airplane concurrent deque
+     private final AdvancementDataPlayer advancementDataPlayer;
+     private final ServerStatisticManager serverStatisticManager;
+     private float lastHealthScored = Float.MIN_VALUE;
 diff --git a/src/main/java/net/minecraft/server/EntityTrackerEntry.java b/src/main/java/net/minecraft/server/EntityTrackerEntry.java
 index f322dccd834ff56b99f8796309709b5b6ac01456..4c845a8d57d9a602e41b2808e867adec14f8ae4c 100644
 --- a/src/main/java/net/minecraft/server/EntityTrackerEntry.java
@@ -92,7 +105,7 @@ index f322dccd834ff56b99f8796309709b5b6ac01456..4c845a8d57d9a602e41b2808e867adec
  
              if (!cancelled) {
 diff --git a/src/main/java/net/minecraft/server/PlayerChunkMap.java b/src/main/java/net/minecraft/server/PlayerChunkMap.java
-index 16779ffa00caf32752170700e1d88092802fa932..558645b149090942d4049bac021160adb154adcc 100644
+index 16779ffa00caf32752170700e1d88092802fa932..d1a78ec02bc755ee9bd0ac5ae1b57a405b386af5 100644
 --- a/src/main/java/net/minecraft/server/PlayerChunkMap.java
 +++ b/src/main/java/net/minecraft/server/PlayerChunkMap.java
 @@ -2118,6 +2118,9 @@ public class PlayerChunkMap extends IChunkLoader implements PlayerChunk.d {
@@ -154,15 +167,3 @@ index 16779ffa00caf32752170700e1d88092802fa932..558645b149090942d4049bac021160ad
              if (entityplayer != this.tracker) {
                  // Paper start - remove allocation of Vec3D here
                  //Vec3D vec3d = entityplayer.getPositionVector().d(this.tracker.getPositionVector()); // MC-155077, SPIGOT-5113
-@@ -2513,7 +2518,11 @@ Sections go from 0..16. Now whenever a section is not empty, it can potentially
-                         }
-                     }
- 
-+                    // Airplane start - sync
-+                    synchronized (entityplayer.removeQueue) {
-                     entityplayer.removeQueue.remove(Integer.valueOf(this.tracker.getId()));
-+                    }
-+                    // Airplane end
-                     // CraftBukkit end
- 
-                     if (flag1 && this.trackedPlayerMap.putIfAbsent(entityplayer, true) == null) { // Paper
