@@ -1,17 +1,18 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Paul Sauve <paul@technove.co>
-Date: Sat, 23 Jan 2021 15:59:36 -0600
+Date: Tue, 26 Jan 2021 11:40:36 -0600
 Subject: [PATCH] Multithreaded entity tracking
 
 
 diff --git a/src/main/java/gg/airplane/AirplaneConfig.java b/src/main/java/gg/airplane/AirplaneConfig.java
-index 4feb9686f45ce4ae9f474447496b8e0f6fcb7e31..3df85f3f8d1f58c10d0f7cf18023dba88467beba 100644
+index c39c9929a251b41ab60e1509b4e6c90d0825dc0c..863ca9f6cf6ea065f5f8627e327eae5d762fac95 100644
 --- a/src/main/java/gg/airplane/AirplaneConfig.java
 +++ b/src/main/java/gg/airplane/AirplaneConfig.java
-@@ -43,4 +43,12 @@ public class AirplaneConfig {
-         }
+@@ -68,4 +68,13 @@ public class AirplaneConfig {
+         dynamicHoglinBehavior = manual.get("behavior-activation.hoglin", dynamicHoglinBehavior);
      }
  
++
 +    public static boolean multithreadedEntityTracker = true;
 +
 +    private static void entityTracker() {
